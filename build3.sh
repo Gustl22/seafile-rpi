@@ -68,6 +68,10 @@ install_dependencies()
      libglib2.0-dev \
      libjansson-dev \
      libjpeg-dev \
+     zlib1g-dev \
+     libtiff5-dev \
+     libfreetype6-dev \
+     libwebp-dev \
      libldap2-dev \
      libmariadbclient-dev-compat \
      libonig-dev \
@@ -234,16 +238,16 @@ install_thirdparty()
   STEPCOUNTER=$((STEPCOUNTER+1))
   echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Install Seafile thirdparty requirements\e[39m\n"
 
-  # add piwheels to pip
-  echo -e "\e[93m   Add piwheels to pip\e[39m\n"
-  echo "[global]" > /etc/pip.conf
-  echo "extra-index-url=https://www.piwheels.org/simple" >> /etc/pip.conf
+#  # add piwheels to pip
+#  echo -e "\e[93m   Add piwheels to pip\e[39m\n"
+#  echo "[global]" > /etc/pip.conf
+#  echo "extra-index-url=https://www.piwheels.org/simple" >> /etc/pip.conf
 
   # While pip alone is sufficient to install from pre-built binary archives, up to date copies of the setuptools and wheel projects are useful to ensure we can also install from source archives
   # e.g. default shipped pip=9.0.1 in Ubuntu Bionic => need update to pip=20.*
   # script executed like as seafile user, therefore pip upgrade only for seafile user, not system wide; pip installation goes to /home/seafile/.local/lib/python3.6/site-packages
   echo -e "\n\e[93m   Download and update pip(3), setuptools and wheel from PyPI\e[39m\n"
-  (set -x; python3 -m pip install --user --upgrade pip setuptools wheel --no-warn-script-location)
+  (set -x; python3 -m pip install --user --upgrade pip setuptools wheel)
 
   mkdir -p $THIRDPARTYFOLDER
 
@@ -260,7 +264,7 @@ install_thirdparty()
   # install Seahub and SeafDAV thirdparty requirements
   # on pip=20.* DEPRECATION: --install-option: ['--install-lib', '--install-scripts']
   echo -e "\n\e[93m   Install Seahub and SeafDAV thirdparty requirements\e[39m\n"
-  (set -x; python3 -m pip install -r $THIRDPARTYFOLDER/requirements.txt --target $THIRDPARTYFOLDER --no-cache --upgrade)
+  (set -x; python3 -m pip install -r $THIRDPARTYFOLDER/requirements.txt --target $THIRDPARTYFOLDER --no-cache --upgrade --use-feature=2020-resolver)
 
   # clean up
   echo -e "\n\e[93m   Clean up\e[39m\n"
