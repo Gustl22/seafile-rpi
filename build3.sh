@@ -1,5 +1,5 @@
 #!/bin/bash
-# Usage: ./build3.sh 8.0.0
+# Usage: ./build3.sh 8.0.1
 
 #
 # CONST
@@ -15,7 +15,7 @@ PKGDIR=built-seafile-server-pkgs
 LIBSEARPC_VERSION_LATEST=3.2-latest # check if new tag is available on https://github.com/haiwen/libsearpc/releases
 LIBSEARPC_VERSION_FIXED=3.1.0 # libsearpc sticks to 3.1.0 https://github.com/haiwen/libsearpc/commit/43d768cf2eea6afc6e324c2b1a37a69cd52740e3
 LIBSEARPC_TAG=v$LIBSEARPC_VERSION_LATEST
-VERSION=${1:-'8.0.0'} # easily pass the Seafile server version to the build3.sh script; e.g. ./build3.sh 8.0.0
+VERSION=${1:-'8.0.1'} # easily pass the Seafile server version to the build3.sh script
 VERSION_TAG=v$VERSION-server
 VERSION_CCNET=6.0.1 # ccnet has not consistent version (see configure.ac)
 VERSION_SEAFILE=6.0.1 # ebenda for seafile
@@ -24,53 +24,13 @@ PYTHON_REQUIREMENTS_URL_SEAHUB=https://raw.githubusercontent.com/haiwen/seahub/m
 PYTHON_REQUIREMENTS_URL_SEAFDAV=https://raw.githubusercontent.com/haiwen/seafdav/master/requirements.txt
 
 STEPS=12
+STEPCOUNTER=0
 
 mkdir -p $BUILDFOLDER
 
-echo "Build seafile-rpi $VERSION_TAG."
-
-#
-# INSTALL DEPENDENCIES
-#
-
-install_dependencies()
+echo_start()
 {
-  echo -e "\n\e[93m-> [1/$STEPS] Install dependencies\e[39m"
-
-  # https://github.com/haiwen/seafile/issues/1158
-  # onigposix (libonig-dev) is dependency for /usr/local/include/evhtp.h
-
-  echo -e "\n\e[93mDownloads the package lists from the repositories and updates them\e[39m\n"
-  (set -x; sudo apt-get update)
-  echo -e "\n\e[93mInstall build-essential package\e[39m\n"
-  (set -x; sudo apt-get install -y build-essential)
-  echo -e "\n\e[93mInstall build dependencies\e[39m\n"
-  (set -x; sudo apt-get install -y \
-     cmake \
-     git \
-     intltool \
-     libarchive-dev \
-     libcurl4-openssl-dev \
-     libevent-dev \
-     libfuse-dev \
-     libglib2.0-dev \
-     libjansson-dev \
-     libldap2-dev \
-     libmariadbclient-dev-compat \
-     libonig-dev \
-     libpq-dev \
-     libsqlite3-dev \
-     libssl-dev \
-     libtool \
-     libxml2-dev \
-     libxslt-dev \
-     python3-lxml \
-     python3-pip \
-     python3-setuptools \
-     python3-wheel \
-     uuid-dev \
-     valac \
-     wget)
+  echo -e "\e[93mBuild seafile-rpi $VERSION_TAG\e[39m\n"
 }
 
 #
@@ -79,7 +39,8 @@ install_dependencies()
 
 build_libevhtp()
 {
-  echo -e "\n\e[93m-> [2/$STEPS] Build libevhtp\e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Build libevhtp\e[39m\n"
 
   cd $BUILDFOLDER
 
@@ -94,11 +55,11 @@ build_libevhtp()
   fi
   (set -x; cmake -DEVHTP_DISABLE_SSL=ON -DEVHTP_BUILD_SHARED=OFF .)
   (set -x; make)
-  (set -x; sudo make install)
+  (set -x; make install)
   cd $SCRIPTPATH
 
   # update system lib cache
-  sudo ldconfig
+  #ldconfig
 }
 
 #
@@ -107,7 +68,8 @@ build_libevhtp()
 
 export_pkg_config_path()
 {
-  echo -e "\n\e[93m-> [3/$STEPS] PREPARE libs\e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] PREPARE libs\e[39m\n"
   # Export PKG_CONFIG_PATH for seafile-server, libsearpc and ccnet-server
   echo -e "\e[93m   Export PKG_CONFIG_PATH for seafile-server, libsearpc and ccnet-server\e[39m\n"
   export PKG_CONFIG_PATH=$SCRIPTPATH/$BUILDFOLDER/ccnet-server:$PKG_CONFIG_PATH
@@ -124,7 +86,8 @@ export_pkg_config_path()
 
 build_libsearpc()
 {
-  echo -e "\e[93m-> [4/$STEPS] Build libsearpc\e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Build libsearpc\e[39m\n"
 
   cd $BUILDFOLDER
   if [ -d "libsearpc" ]; then
@@ -149,8 +112,8 @@ build_libsearpc()
 
 build_ccnet()
 {
-  echo
-  echo -e "\n\e[93m-> [5/$STEPS] Build ccnet-server\e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Build ccnet-server\e[39m\n"
 
   cd $BUILDFOLDER
   if [ -d "ccnet-server" ]; then
@@ -175,8 +138,8 @@ build_ccnet()
 
 build_seafile()
 {
-  echo
-  echo -e "\n\e[93m-> [6/$STEPS] Build seafile-server\e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Build seafile-server\e[39m\n"
 
   cd $BUILDFOLDER
   if [ -d "seafile-server" ]; then
@@ -201,23 +164,14 @@ build_seafile()
 
 install_thirdparty()
 {
-  echo
-  echo -e "\n\e[93m-> [7/$STEPS] Install Seafile thirdparty requirements\e[39m\n"
-
-  # get and install pip(3) from linux distro
-  echo -e "\n\e[93m   Get and install pip(3) from linux distro\e[39m\n"
-  (set -x; sudo apt-get install -y python3-pip)
-
-  # add piwheels to pip
-  echo -e "\e[93m   Add piwheels to pip\e[39m\n"
-  echo "[global]" > /etc/pip.conf
-  echo "extra-index-url=https://www.piwheels.org/simple" >> /etc/pip.conf
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Install Seafile thirdparty requirements\e[39m\n"
 
   # While pip alone is sufficient to install from pre-built binary archives, up to date copies of the setuptools and wheel projects are useful to ensure we can also install from source archives
   # e.g. default shipped pip=9.0.1 in Ubuntu Bionic => need update to pip=20.*
   # script executed like as seafile user, therefore pip upgrade only for seafile user, not system wide; pip installation goes to /home/seafile/.local/lib/python3.6/site-packages
   echo -e "\n\e[93m   Download and update pip(3), setuptools and wheel from PyPI\e[39m\n"
-  (set -x; python3 -m pip install --user --upgrade pip setuptools wheel --no-warn-script-location)
+  (set -x; python3 -m pip install --user --upgrade pip setuptools wheel) # --no-warn-script-location
 
   mkdir -p $THIRDPARTYFOLDER
 
@@ -239,7 +193,7 @@ install_thirdparty()
   # clean up
   echo -e "\n\e[93m   Clean up\e[39m\n"
   rm $THIRDPARTYFOLDER/requirements.txt $THIRDPARTYFOLDER/requirements_SeafDAV.txt
-  rm -rf $(find . -name "__pycache__")
+  (set -x; rm -rf $(find . -name "__pycache__"))
 }
 
 #
@@ -248,7 +202,8 @@ install_thirdparty()
 
 build_seahub()
 {
-  echo -e "\n\e[93m-> [8/$STEPS] Build seahub\e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Build seahub\e[39m\n"
 
   # get source code
   cd $BUILDFOLDER
@@ -292,7 +247,8 @@ build_seahub()
 
 build_seafobj()
 {
-  echo -e "\n\e[93m-> [9/$STEPS] Build seafobj\e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Build seafobj\e[39m\n"
 
   cd $BUILDFOLDER
   if [ -d "seafobj" ]; then
@@ -314,7 +270,8 @@ build_seafobj()
 
 build_seafdav()
 {
-  echo -e "\n\e[93m-> [10/$STEPS] Build seafdav\e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Build seafdav\e[39m\n"
 
   cd $BUILDFOLDER
   if [ -d "seafdav" ]; then
@@ -336,7 +293,8 @@ build_seafdav()
 
 copy_pkg_source()
 {
-  echo -e "\n\e[93m-> [11/$STEPS] Copy sources to $PKGSOURCEDIR/R$VERSION \e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Copy sources to $PKGSOURCEDIR/R$VERSION \e[39m\n"
 
   mkdir -p $PKGSOURCEDIR/R$VERSION
   (set -x; cp $BUILDFOLDER/libsearpc/libsearpc-$LIBSEARPC_VERSION_FIXED.tar.gz $PKGSOURCEDIR/R$VERSION)
@@ -353,7 +311,8 @@ copy_pkg_source()
 
 build_server()
 {
-  echo -e "\n\e[93m-> [12/$STEPS] Build Seafile server\e[39m\n"
+  STEPCOUNTER=$((STEPCOUNTER+1))
+  echo -e "\n\e[93m-> [$STEPCOUNTER/$STEPS] Build Seafile server\e[39m\n"
 
   mkdir -p $PKGDIR
   (set -x; python3 $SCRIPTPATH/$BUILDFOLDER/seafile-server/scripts/build/build-server.py \
@@ -374,14 +333,14 @@ build_server()
 
 echo_complete()
 {
-  echo -e "\n\e[93m-> BUILD SUCCESSFULLY COMPLETED.\e[39m\n"
+  echo -e "\n\e[93m-> BUILD COMPLETED.\e[39m\n"
 }
 
 #
 # MAIN
 #
 
-install_dependencies
+echo_start
 build_libevhtp
 
 export_pkg_config_path
