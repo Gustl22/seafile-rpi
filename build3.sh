@@ -23,7 +23,7 @@ MYSQL_CONFIG_PATH=/usr/bin/mysql_config # ensure compilation with mysql support
 PYTHON_REQUIREMENTS_URL_SEAHUB=https://raw.githubusercontent.com/haiwen/seahub/master/requirements.txt
 PYTHON_REQUIREMENTS_URL_SEAFDAV=https://raw.githubusercontent.com/haiwen/seafdav/master/requirements.txt
 
-STEPS=12
+STEPS=11
 STEPCOUNTER=0
 
 mkdir -p $BUILDFOLDER
@@ -54,6 +54,9 @@ build_libevhtp()
     cd libevhtp
   fi
   (set -x; cmake -DEVHTP_DISABLE_SSL=ON -DEVHTP_BUILD_SHARED=OFF .)
+  (set -x; autoconf)  # TODO how to configure output path?
+  (set -x; ./configure --prefix=$HOME/opt)
+  (set -x; export PATH="$HOME/opt/bin:$PATH")
   (set -x; make)
   (set -x; make install)
   cd $SCRIPTPATH
