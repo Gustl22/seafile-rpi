@@ -68,10 +68,6 @@ install_dependencies()
      libglib2.0-dev \
      libjansson-dev \
      libjpeg-dev \
-     zlib1g-dev \
-     libtiff5-dev \
-     libfreetype6-dev \
-     libwebp-dev \
      libldap2-dev \
      libmariadbclient-dev-compat \
      libonig-dev \
